@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:granity/models/user.dart'; // Import the custom user model
+import 'package:granity/models/product.dart'; // Import the custom user model
 
 class UserProvider with ChangeNotifier {
   User? _user;
@@ -71,32 +72,49 @@ class UserProvider with ChangeNotifier {
   }
 
   // Récupérer les données utilisateur
-  Future<void> fetchUserData(String? userId) async {
-    if (userId != null) {
-      try {
-        DocumentSnapshot<Map<String, dynamic>> userDoc = await _db.collection('users').doc(userId).get();
-        if (userDoc.exists) {
-          Map<String, dynamic> userData = userDoc.data()!;
-          _customUser = CustomUser(
-            uid: userId,
-            name: userData['name'],
-            email: userData['email'],
-            phoneNumber: userData['phoneNumber'],
-            address: userData['address'],
-            codePostal: userData['codePostal'],
-            ville: userData['ville'],
-            role: userData['role'] ?? 'default', // Set default role if not present in Firestore
-          );
-          notifyListeners();
-        } else {
-          print('Document does not exist for user ID: $userId');
-        }
-      } catch (e) {
-        print('Error fetching user data: $e');
-        throw e;
+Future<void> fetchUserData(String? userId) async {
+  if (userId != null) {
+    try {
+      DocumentSnapshot<Map<String, dynamic>> userDoc = await _db.collection('users').doc(userId).get();
+
+      if (userDoc.exists) {
+        Map<String, dynamic> userData = userDoc.data()!;
+
+        // Récupérer les services associés à l'utilisateur
+        final servicesSnapshot = await _db
+            .collection('products')
+            .where('userId', isEqualTo: userId)
+            .get();
+
+        List<Product> services = servicesSnapshot.docs.map((doc) {
+          final data = doc.data();
+          return Product.fromMap(data); // Assurez-vous que Product.fromMap est correctement défini
+        }).toList();
+
+        // Créer l'objet CustomUser avec les données utilisateur et les services
+        _customUser = CustomUser(
+          uid: userId,
+          name: userData['name'] ?? 'No name',
+          email: userData['email'] ?? 'No email',
+          phoneNumber: userData['phoneNumber'] ?? 'No phone number',
+          address: userData['address'],
+          codePostal: userData['codePostal'],
+          ville: userData['ville'],
+          role: userData['role'] ?? 'default',
+          services: services,
+        );
+
+        notifyListeners();
+      } else {
+        print('Document does not exist for user ID: $userId');
       }
+    } catch (e) {
+      print('Error fetching user data: $e');
+      throw e;
     }
   }
+}
+
 
   // Vérifier l'état d'authentification de l'utilisateur
   void checkUserAuthState() {
@@ -137,6 +155,12 @@ class UserProvider with ChangeNotifier {
           String codePostal = userData['codePostal'] ?? 'codePostal_defaut';
           String ville = userData['ville'] ?? 'ville_defaut';
           String role = userData['role'] ?? 'default';
+          List<Product> services = [];
+    if (userData['services'] != null) {
+      List<dynamic> servicesData = userData['services'];
+      services = servicesData.map((item) => Product.fromMap(item)).toList();
+    }
+
           _customUser = CustomUser(
             uid: userId,
             name: name,
@@ -146,6 +170,7 @@ class UserProvider with ChangeNotifier {
             codePostal: codePostal,
             ville: ville,
             role: role,
+            services: services,
           );
           notifyListeners();
           return _customUser;
@@ -162,19 +187,69 @@ class UserProvider with ChangeNotifier {
       throw e;
     }
   }
-   Future<void> fetchUser() async {
-    if (uid != null) {
+Future<void> fetchUser() async {
+  if (uid != null) {
+    try {
+      // Fetch user data
       final userDoc = await _db.collection('users').doc(uid).get();
       if (userDoc.exists) {
-        _customUser = CustomUser.fromMap(userDoc.data()!);
+        final userData = userDoc.data()!;
+
+        // Fetch products for this user
+        final productSnapshot = await _db
+            .collection('products')
+            .where('userId', isEqualTo: uid)
+            .get();
+
+        List<Product> services = productSnapshot.docs.map((productDoc) {
+          final productData = productDoc.data();
+          return Product.fromMap(productData);
+        }).toList();
+
+        // Create and set CustomUser
+        _customUser = CustomUser.fromMap(userData, services);
         notifyListeners();
       }
+    } catch (e) {
+      print("Error fetching user data: $e");
     }
   }
-    Future<List<CustomUser>> getPrestataires() async {
-    final querySnapshot = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'prestataire').get();
-    return querySnapshot.docs.map((doc) => CustomUser.fromMap(doc.data())).toList();
+}
+
+Future<List<CustomUser>> getPrestataires() async {
+  final querySnapshot = await FirebaseFirestore.instance
+      .collection('users')
+      .where('role', isEqualTo: 'Prestataire')
+      .get();
+
+
+  List<CustomUser> prestataires = [];
+
+  for (var doc in querySnapshot.docs) {
+    final userData = doc.data();
+
+    final userId = doc.id;
+
+    final servicesSnapshot = await FirebaseFirestore.instance
+        .collection('products')
+        .where('userId', isEqualTo: userId)
+        .get();
+
+
+     // Map service documents to Product objects
+        List<Product> services = servicesSnapshot.docs.map((serviceDoc) {
+          return Product.fromMap(serviceDoc.data());
+        }).toList();
+
+        // Create a CustomUser object and add it to the list
+        CustomUser prestataire = CustomUser.fromMap(userData, services);
+        prestataire.uid = userId; // Optionally set the ID in the CustomUser object
+        prestataires.add(prestataire);
   }
+
+  return prestataires;
+}
+
 
   Future<void> updateUserProfileImage(String userId, String imageUrl) async {
     try {

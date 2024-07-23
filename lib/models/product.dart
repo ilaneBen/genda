@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Product {
   final String id;
@@ -7,8 +7,8 @@ class Product {
   final double price;
   final String imageUrl;
   final String userId;
-  List<DateTime> availableDates;
-  Map<DateTime, List<String>> timeSlots;
+  final List<DateTime> availableDates;
+  final Map<DateTime, List<String>> timeSlots;
 
   Product({
     required this.id,
@@ -21,6 +21,39 @@ class Product {
     required this.timeSlots,
   });
 
+  factory Product.fromMap(Map<String, dynamic> data) {
+    // Convert 'availableDates' to a list of DateTime objects
+    var availableDatesFromData = (data['availableDates'] as List).map((date) {
+      if (date is Timestamp) {
+        return date.toDate();
+      } else if (date is String) {
+        return DateTime.parse(date);
+      } else {
+        throw Exception("Invalid date format in availableDates");
+      }
+    }).toList();
+
+    // Convert 'timeSlots' to a map with DateTime keys and List<String> values
+    var timeSlotsFromData = (data['timeSlots'] as Map).map<DateTime, List<String>>((key, value) {
+      if (value is List) {
+        return MapEntry(DateTime.parse(key), List<String>.from(value));
+      } else {
+        throw Exception("Invalid time slot format");
+      }
+    });
+
+    return Product(
+      id: data['id'],
+      name: data['name'],
+      description: data['description'],
+      price: data['price'],
+      imageUrl: data['imageUrl'],
+      userId: data['userId'],
+      availableDates: availableDatesFromData,
+      timeSlots: timeSlotsFromData,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -29,21 +62,13 @@ class Product {
       'price': price,
       'imageUrl': imageUrl,
       'userId': userId,
-      'availableDates': availableDates.map((date) => date.toIso8601String()).toList(),
-      'timeSlots': timeSlots.map((date, slots) => MapEntry(date.toIso8601String(), slots)),
+      'availableDates': availableDates.map((e) => Timestamp.fromDate(e)).toList(),
+      'timeSlots': timeSlots.map((key, value) {
+        return MapEntry(
+          key.toIso8601String(),
+          value,
+        );
+      }),
     };
-  }
-
-  factory Product.fromMap(Map<String, dynamic> map) {
-    return Product(
-      id: map['id'],
-      name: map['name'],
-      description: map['description'],
-      price: map['price'],
-      imageUrl: map['imageUrl'],
-      userId: map['userId'],
-      availableDates: List<DateTime>.from(map['availableDates'].map((date) => DateTime.parse(date))),
-      timeSlots: Map<DateTime, List<String>>.from(map['timeSlots'].map((date, slots) => MapEntry(DateTime.parse(date), List<String>.from(slots)))),
-    );
   }
 }

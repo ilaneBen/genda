@@ -132,34 +132,28 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
-  void _addTimeSlot(DateTime date) {
-    final TextEditingController timeController = TextEditingController();
-    showDialog(
+  Future<void> _addTimeSlot(DateTime date) async {
+    final TimeOfDay? start = await showTimePicker(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Ajouter un créneau horaire'),
-          content: TextField(
-            controller: timeController,
-            decoration: InputDecoration(hintText: 'Ex: 10:00 - 12:00'),
-          ),
-          actions: <Widget>[
-            ElevatedButton(
-              child: Text('Ajouter'),
-              onPressed: () {
-                setState(() {
-                  if (!_timeSlots.containsKey(date)) {
-                    _timeSlots[date] = [];
-                  }
-                  _timeSlots[date]!.add(timeController.text);
-                });
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+      initialTime: TimeOfDay.now(),
     );
+
+    if (start != null) {
+      final TimeOfDay? end = await showTimePicker(
+        context: context,
+        initialTime: start.replacing(hour: start.hour + 1),
+      );
+
+      if (end != null) {
+        setState(() {
+          final String timeSlot = '${start.format(context)} - ${end.format(context)}';
+          if (!_timeSlots.containsKey(date)) {
+            _timeSlots[date] = [];
+          }
+          _timeSlots[date]!.add(timeSlot);
+        });
+      }
+    }
   }
 
   void _addProduct(String userId) async {

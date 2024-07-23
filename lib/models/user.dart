@@ -1,17 +1,18 @@
 // models/user.dart
-import 'dart:ffi';
+import 'package:granity/models/product.dart';
 
 class CustomUser {
-  final String uid;
+   String uid;
   final String name;
   final String email;
   final String phoneNumber;
   final String role;
-  final String? imageUrl; // Add imageUrl field
-  final String? address; // Add imageUrl field
-  final String? codePostal; // Add imageUrl field
-  final String? ville; // Add imageUrl field
+  final String? imageUrl;
+  final String? address;
+  final String? codePostal;
+  final String? ville;
   final double? distance;
+  final List<Product> services;
 
   CustomUser({
     required this.uid,
@@ -19,30 +20,30 @@ class CustomUser {
     required this.email,
     required this.phoneNumber,
     required this.role,
-    this.imageUrl, // Initialize imageUrl field
-    this.address, // Initialize imageUrl field
-    this.codePostal, // Initialize imageUrl field
-    this.ville, // Initialize imageUrl field
-    this.distance, // Initialize imageUrl field
+    this.imageUrl,
+    this.address,
+    this.codePostal,
+    this.ville,
+    this.distance,
+    required this.services,
   });
 
-  // Factory constructor to create an instance from a map
-  factory CustomUser.fromMap(Map<String, dynamic> data) {
+  factory CustomUser.fromMap(Map<String, dynamic> data, List<Product> services) {
     return CustomUser(
-      uid: data['id'] ?? '', // Provide a default value if null
-      name: data['name'] ?? '', // Provide a default value if null
-      email: data['email'] ?? '', // Provide a default value if null
-      phoneNumber: data['phoneNumber'] ?? '', // Provide a default value if null
-      role: data['role'] ?? '', // Provide a default value if null
-      imageUrl: data['imageUrl'], // imageUrl can be null
-      address: data['address'], // imageUrl can be null
-      codePostal: data['codePostal'], // imageUrl can be null
-      ville: data['ville'], // imageUrl can be null
-      distance: data['distance'], // imageUrl can be null
+      uid: data['uid'] ?? '',
+      name: data['name'] ?? '',
+      email: data['email'] ?? '',
+      phoneNumber: data['phoneNumber'] ?? '',
+      role: data['role'] ?? '',
+      imageUrl: data['imageUrl'],
+      address: data['address'],
+      codePostal: data['codePostal'],
+      ville: data['ville'],
+      distance: data['distance'],
+      services: services
     );
   }
 
-  // Method to create a new instance with updated fields
   CustomUser copyWith({
     String? uid,
     String? name,
@@ -54,6 +55,7 @@ class CustomUser {
     String? codePostal,
     String? ville,
     double? distance,
+    List<Product>? services,
   }) {
     return CustomUser(
       uid: uid ?? this.uid,
@@ -66,6 +68,7 @@ class CustomUser {
       codePostal: codePostal ?? this.codePostal,
       ville: ville ?? this.ville,
       distance: distance ?? this.distance,
+      services: services ?? this.services,
     );
   }
 }

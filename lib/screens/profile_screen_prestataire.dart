@@ -28,26 +28,24 @@ class _ProfileScreenPrestataireState extends State<ProfileScreenPrestataire> {
   }
 
   Future<void> _uploadImage(String userId) async {
-  if (_selectedImage == null) return;
+    if (_selectedImage == null) return;
 
-  try {
-    final storageRef = FirebaseStorage.instance.ref().child('user_images').child('$userId.jpg');
-    final uploadTask = storageRef.putFile(_selectedImage!);
-    final taskSnapshot = await uploadTask;
-    final downloadUrl = await taskSnapshot.ref.getDownloadURL();
+    try {
+      final storageRef = FirebaseStorage.instance.ref().child('user_images').child('$userId.jpg');
+      final uploadTask = storageRef.putFile(_selectedImage!);
+      final taskSnapshot = await uploadTask;
+      final downloadUrl = await taskSnapshot.ref.getDownloadURL();
 
-    // Mettre à jour le profil de l'utilisateur avec l'URL de l'image
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    await userProvider.updateUserProfileImage(userId, downloadUrl);
+      // Update user profile with the image URL
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.updateUserProfileImage(userId, downloadUrl);
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Image uploadée avec succès')));
-  } catch (e) {
-    print('Erreur lors du téléchargement de l\'image: $e');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Échec du téléchargement de l\'image')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Image uploadée avec succès')));
+    } catch (e) {
+      print('Erreur lors du téléchargement de l\'image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Échec du téléchargement de l\'image')));
+    }
   }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +110,30 @@ class _ProfileScreenPrestataireState extends State<ProfileScreenPrestataire> {
                 },
                 child: Text('Déconnexion'),
               ),
+              SizedBox(height: 32),
+              // Display services
+              Text(
+                'Services:',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              user.services.isNotEmpty
+                  ? Column(
+                      children: user.services.map((service) {
+                        return Card(
+                          margin: EdgeInsets.symmetric(vertical: 8.0),
+                          child: ListTile(
+                            leading: service.imageUrl.isNotEmpty
+                                ? Image.network(service.imageUrl, width: 50, height: 50, fit: BoxFit.cover)
+                                : Placeholder(fallbackWidth: 50, fallbackHeight: 50),
+                            title: Text(service.name, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            subtitle: Text(service.description),
+                            trailing: Text('\$${service.price.toStringAsFixed(2)}', style: TextStyle(fontSize: 16)),
+                          ),
+                        );
+                      }).toList(),
+                    )
+                  : Text('Aucun service disponible', style: TextStyle(fontSize: 18)),
             ] else ...[
               Text('Utilisateur non connecté'),
               SizedBox(height: 16),

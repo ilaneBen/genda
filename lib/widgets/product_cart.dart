@@ -95,7 +95,6 @@ class _ProductCardState extends State<ProductCard> {
                         _selectedTime = null; // Réinitialiser le créneau horaire lorsque la date change
                         _selectedDuration = null; // Réinitialiser la durée lorsque la date change
                       });
-                      print('Date sélectionnée: $_selectedDate');
                     },
                     child: Text(
                       formatDate(date),
@@ -183,7 +182,6 @@ class _ProductCardState extends State<ProductCard> {
                         setState(() {
                           _selectedTime = time;
                         });
-                        print('Créneau horaire sélectionné: ${formatTime(_selectedTime!)}');
                       },
                       child: Text(
                         formatTime(time),

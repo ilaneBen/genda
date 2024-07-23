@@ -58,4 +58,65 @@ class ProductService {
       return []; // Return empty list or handle error gracefully
     }
   }
+
+    Future<List<Product>> getServicesByUserId(String userId) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('products')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        
+        final timeSlotsMap = data['timeSlots'] as Map<String, dynamic>;
+        final validatedTimeSlots = <DateTime, List<String>>{};
+
+        timeSlotsMap.forEach((key, value) {
+          try {
+            final date = DateTime.parse(key);
+
+            // Assurez-vous que 'value' est une liste de chaînes, sinon une liste vide
+            final slots = value is List ? List<String>.from(value) : <String>[];
+
+            // Validation du format des créneaux horaires
+
+            validatedTimeSlots[date] = slots;
+          } catch (e) {
+            print('Error validating time slots for $key: $e');
+          }
+        });
+
+        return Product(
+          id: doc.id,
+          name: data['name'],
+          description: data['description'],
+          price: data['price'],
+          imageUrl: data['imageUrl'],
+          userId: data['userId'],
+          availableDates: validatedTimeSlots.keys.toList(),
+          timeSlots: validatedTimeSlots,
+        );
+      }).toList();
+    } catch (e) {
+      print('Error fetching products: $e');
+      throw Exception('Error fetching products: $e');
+    }
+  }
+
+
+  Future<List<Map<String, dynamic>>> getAllDocs() async {
+    try {
+      final querySnapshot = await _firestore.collection('products').get();
+      return querySnapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id; // Ajouter l'ID du document aux données
+        return data;
+      }).toList();
+    } catch (e) {
+      print('Error fetching documents: $e');
+      return [];
+    }
+  }
 }
+
